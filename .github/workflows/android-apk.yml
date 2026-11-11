@@ -1,0 +1,33 @@
+name: Compilar APK Android
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Preparar Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compilar APK instalável
+        run: gradle --no-daemon assembleDebug
+      - name: Enviar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArenaAgent-APK-Android
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
