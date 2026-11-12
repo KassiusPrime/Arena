@@ -31,6 +31,11 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Manter chave de assinatura debug entre atualizações
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: arena-agent-debug-signing-key-v1
       - name: Compilar APK instalável
         run: gradle --no-daemon --stacktrace assembleDebug
       - name: Enviar APK

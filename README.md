@@ -1,52 +1,27 @@
-# Arena Agent para Android — app independente (não oficial)
+# Arena para Android — versão 1.1
 
-Aplicativo Android criado para abrir diretamente:
+Aplicativo Android independente (não oficial) para acessar `https://arena.ai/`.
 
-https://arena.ai/agent/01a1cb5e-c8db-7f67-8fa1-5220b5404438
+## Alterações em relação à versão anterior
 
-## O que faz
+- Não inicia mais no link antigo com ID de sessão inválido. Abre a página oficial `https://arena.ai/` para o usuário fazer login e escolher o modo de conversa.
+- Nenhuma barra superior do aplicativo: WebView ocupa toda a área útil da tela.
+- Menu flutuante discreto ☰ e gesto da borda esquerda para abrir o painel; arraste para a esquerda ou toque fora para fechar.
+- Painel mostra o histórico oficial do site Arena dentro de uma visualização secundária com cookies compartilhados, além de Novo chat e Modo Agente.
+- Sessão preservada por CookieManager, DOM storage/WebStorage e flush quando a página carrega, ao alternar de app e ao encerrar.
+- Não armazena nem recolhe senhas diretamente: login e dados de chat são tratados pelo site Arena.
+- Logo de coluna branca, fundo preto, fornecida pelo usuário, aplicada aos ícones e ao painel.
+- Suporte a popups de autenticação e a uploads de arquivos.
 
-- Abre a sessão específica no WebView Android (não instala e não depende do PWA).
-- Mantém cookies/login no armazenamento isolado do próprio aplicativo.
-- Usa JavaScript, armazenamento local e seletor nativo para anexar arquivos.
-- Permite voltar, atualizar, retornar ao link inicial e abrir a página no navegador externo.
-- Suporta downloads HTTPS comuns via DownloadManager (na pasta Downloads).
-- Oferece tela de erro para tentar novamente e limpeza de dados mediante confirmação.
-- Bloqueia conteúdo não HTTPS dentro do WebView, sem coletar credenciais e sem servidor intermediário.
+## Limitações conhecidas
 
-## Como gerar um APK instalável
+- Este é um cliente **WebView**, sem integração oficial com Arena. Históricos e chats dependem do servidor, rotas e da interface da Arena; alterações do site podem quebrar o painel lateral.
+- **Google Sign-In pode recusar navegadores WebView embarcados**. Isso é uma política do Google, não uma configuração de cookies. O login com e-mail no site pode funcionar; quando o provedor exigir um navegador compatível, abra o site no navegador pelo botão do painel. Cookies do Chrome não são compartilhados com este app, portanto login via navegador não implica login no WebView.
+- O SDK do Android não transfere cookies do Chrome/Custom Tabs para WebView. Implementar OAuth Google totalmente nativo requer suporte do proprietário do site ao fluxo de autorização (deep link, callback e sessão).
+- A barra de status do Android permanece visível por questões de usabilidade; não há barra superior criada pelo app.
+- WebView pode não suportar certos downloads `blob:`; use o navegador quando necessário.
+- A compilação CI prova que o APK é produzido, mas **não** equivale a teste de login/gestos num aparelho real.
 
-### Opção A: GitHub Actions (sem Android Studio)
+## Compilação
 
-1. Crie um repositório no GitHub e envie o **conteúdo extraído** desta pasta, incluindo `.github`.
-2. Faça push para a branch `main` (ou `master`).
-3. Na guia **Actions**, abra **Compilar APK Android** e a execução concluída.
-4. Em **Artifacts**, baixe `ArenaAgent-APK-Android`.
-5. Extraia o ZIP baixado e instale `app-debug.apk` no Android.
-
-O APK de depuração é assinado automaticamente pela infraestrutura de compilação e pode ser instalado manualmente; não é uma versão para publicação na Play Store.
-
-### Opção B: Android Studio
-
-1. Abra a pasta como projeto Gradle e instale Android SDK 35 se solicitado.
-2. Escolha **Build > Build App Bundle(s) / APK(s) > Build APK(s)**.
-3. Encontre `app/build/outputs/apk/debug/app-debug.apk`.
-
-## Limitações importantes
-
-- **Um wrapper WebView não corrige erros do próprio servidor Arena.** Ele evita o processo de instalação do PWA e usa seu próprio armazenamento.
-- O Arena depende de internet, pode exigir autenticação e a sessão vinculada ao link pode exigir uma conta específica.
-- Alguns provedores, especialmente o **Login com Google**, bloqueiam OAuth em WebViews por segurança. Abra pelo navegador usando o menu, ou utilize um método de login que o Arena ofereça e permita no app.
-- Alguns downloads baseados em `blob:` e fluxos de autenticação por popup poderão exigir o navegador externo.
-- O app não substitui o site, não contorna permissões de acesso e não contém nenhuma API privada do Arena.
-- O projeto não foi compilado/testado em aparelho neste ambiente (sem SDK Android disponível). Use o workflow de compilação ou Android Studio para gerar e testar o APK.
-
-## Segurança e privacidade
-
-Não há integração de terceiros além do próprio site Arena carregado no WebView. Credenciais são enviadas diretamente ao domínio HTTPS do Arena. Links externos são abertos fora do app. Cookies de terceiros são habilitados para compatibilidade de login; o menu permite limpar todos os dados do app.
-
-## Personalização
-
-Altere a constante `START_URL` no começo de `MainActivity.java` para trocar de sessão.
-
-**Nota:** este projeto é independente e não tem afiliação com Arena.ai. A marca e o conteúdo do website pertencem aos seus titulares.
+O fluxo `.github/workflows/android-apk.yml` gera `app-debug.apk` com Gradle 8.9 e Android API 35. Os builds usam um cache com o `debug.keystore` para permitir atualizações após esta versão (uma compilação inicial feita com outro certificado pode exigir desinstalação antes da nova instalação).
