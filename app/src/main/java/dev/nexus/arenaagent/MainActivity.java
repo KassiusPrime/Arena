@@ -68,6 +68,7 @@ public final class MainActivity extends Activity {
     private Dialog popupDialog;
     private WebView popupWebView;
     private boolean drawerOpen = false;
+    private boolean googleLoginNoticeOpen = false;
     private float gestureStartX, gestureStartY;
     private boolean trackingEdge, trackingDrawer;
     private int drawerWidth;
@@ -234,6 +235,10 @@ public final class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 if (!request.isForMainFrame()) return false;
                 Uri uri = request.getUrl();
+                if (isGoogleAuthUrl(uri)) {
+                    showBrowserLoginNotice();
+                    return true;
+                }
                 if (isArenaUrl(uri) && !isHistoryUrl(uri)) {
                     runOnUiThread(() -> navigate(uri.toString()));
                     return true;
@@ -269,7 +274,8 @@ public final class MainActivity extends Activity {
         TextView browser = text("Navegador", 13, LIGHT, false);
         browser.setGravity(Gravity.CENTER);
         bottom.addView(browser, new LinearLayout.LayoutParams(0, -1, 1));
-        browser.setOnClickListener(v -> { hideDrawer(); openBrowser(); });
+        browser.setText("Login no navegador");
+        browser.setOnClickListener(v -> { hideDrawer(); showBrowserLoginNotice(); });
         TextView signout = text("Limpar sessão", 13, MUTED, false);
         signout.setGravity(Gravity.CENTER);
         bottom.addView(signout, new LinearLayout.LayoutParams(0, -1, 1));
@@ -309,6 +315,45 @@ public final class MainActivity extends Activity {
             h.equals("huggingface.co") || h.equals("auth0.com") || h.endsWith(".auth0.com");
     }
 
+    /**
+     * A WebView is not a supported environment for Google OAuth. Opening a partially
+     * completed OAuth URL in the system browser also loses the WebView context and
+     * can cause HTTP 400. Only launch the original Arena home page in the browser,
+     * so that the complete authentication request is created in that browser.
+     */
+    private static boolean isGoogleAuthUrl(Uri uri) {
+        if (uri == null || !"https".equalsIgnoreCase(uri.getScheme())) return false;
+        String host = uri.getHost();
+        if (host == null) return false;
+        String h = host.toLowerCase(Locale.ROOT);
+        return h.equals("accounts.google.com") || h.equals("oauth2.googleapis.com") ||
+               h.equals("accounts.google.com.br");
+    }
+
+    private void showBrowserLoginNotice() {
+        if (isFinishing() || googleLoginNoticeOpen) return;
+        googleLoginNoticeOpen = true;
+        new AlertDialog.Builder(this)
+            .setTitle("Entrar com Google sem erro 400")
+            .setMessage("O Google não aceita login em navegadores incorporados (WebView). " +
+                "O login precisa começar na página do Arena dentro do Chrome, não em um " +
+                "endereço intermediário do Google.\n\n" +
+                "O Chrome mantém o próprio login, mas seus cookies não são compartilhados " +
+                "com este aplicativo. Para continuar usando o Arena aqui, utilize a opção " +
+                "de login por e-mail oferecida pelo site, quando disponível.")
+            .setPositiveButton("Abrir Arena no navegador", (dialog, which) -> {
+                closeAuthPopup();
+                openExternal(Uri.parse(HOME));
+            })
+            .setNeutralButton("Login por e-mail no app", (dialog, which) -> {
+                closeAuthPopup();
+                if (webView != null) webView.loadUrl(HOME);
+            })
+            .setNegativeButton("Voltar", (dialog, which) -> closeAuthPopup())
+            .setOnDismissListener(d -> googleLoginNoticeOpen = false)
+            .show();
+    }
+
     private void applyWebSettings(WebView w, boolean popups) {
         WebSettings s = w.getSettings();
         s.setJavaScriptEnabled(true);
@@ -337,6 +382,10 @@ public final class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 if (!req.isForMainFrame()) return false;
                 Uri uri = req.getUrl();
+                if (isGoogleAuthUrl(uri)) {
+                    showBrowserLoginNotice();
+                    return true;
+                }
                 if ("https".equalsIgnoreCase(uri.getScheme()) &&
                         (isArenaHost(uri.getHost()) || isTrustedAuthHost(uri.getHost()))) return false;
                 openExternal(uri);
@@ -397,6 +446,10 @@ public final class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 if (!req.isForMainFrame()) return false;
                 Uri url = req.getUrl();
+                if (isGoogleAuthUrl(url)) {
+                    showBrowserLoginNotice();
+                    return true;
+                }
                 if ("https".equalsIgnoreCase(url.getScheme()) &&
                     (isArenaHost(url.getHost()) || isTrustedAuthHost(url.getHost()))) return false;
                 openExternal(url);
@@ -565,8 +618,8 @@ public final class MainActivity extends Activity {
     }
 
     private void openBrowser() {
-        String current = webView != null ? webView.getUrl() : null;
-        openExternal(Uri.parse(current != null && current.startsWith("https://") ? current : HOME));
+        // Never hand Chrome an OAuth step generated inside WebView.
+        openExternal(Uri.parse(HOME));
     }
 
     private void confirmClearSession() {
