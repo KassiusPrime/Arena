@@ -1,4 +1,4 @@
-# Arena para Android — versão 1.1
+# Arena LLM para Android — base funcional 1.1
 
 Aplicativo Android independente (não oficial) para acessar `https://arena.ai/`.
 

@@ -182,7 +182,7 @@ public final class MainActivity extends Activity {
         headline.setOrientation(LinearLayout.VERTICAL);
         headline.setPadding(dp(9), 0, 0, 0);
         header.addView(headline, new LinearLayout.LayoutParams(0, -2, 1));
-        headline.addView(text("Arena", 19, LIGHT, true));
+        headline.addView(text("Arena LLM", 19, LIGHT, true));
         headline.addView(text("Suas conversas", 12, MUTED, false));
 
         TextView close = text("×", 30, LIGHT, false);
